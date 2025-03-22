@@ -2,7 +2,7 @@ from fastapi import FastAPI, Path, Depends, HTTPException, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from dotenv import load_dotenv
-from helpers import create_project_json
+from helpers import code_to_tag_generator
 from config import supabase
 import json
 from typing import Dict
@@ -35,8 +35,8 @@ async def create_project(project: Project):
     # Add the project to supabase
     return {"project": project}
 
-@app.post("/upload")
-async def upload_project(bucket_url: str, project_name: str):
+@app.post("/upload_project")
+async def upload_project(project_name: str = 'default'):
     """
     Upload project files from a Supabase bucket and store project information.
     
@@ -45,12 +45,11 @@ async def upload_project(bucket_url: str, project_name: str):
         project_name: Name of the project to store in the database
     """
     try:
-        # Initialize dictionary to store file contents
-        project_files: Dict[str, str] = {}
-        
         # Get list of files from the bucket
         bucket_name = 'project-files'
         files = supabase.storage.from_(bucket_name).list()
+
+        source_code = ''
         
         # Download and process each file
         async with aiohttp.ClientSession() as session:
@@ -62,34 +61,28 @@ async def upload_project(bucket_url: str, project_name: str):
                 async with session.get(file_url) as response:
                     if response.status == 200:
                         content = await response.text()
-                        project_files[file['name']] = content
+                        source_code += f'<{file['name']}>\n{content}\n</{file['name']}>'
                     else:
-                        raise HTTPException(
-                            status_code=400,
-                            detail=f"Failed to download file: {file['name']}"
-                        )
+                        print(f"Failed to download file: {file['name']}")
         
         # Create project JSON using the helper function
-        project_json = create_project_json({
-            "name": project_name,
-            "files": project_files
-        })
+        project_tags = code_to_tag_generator(source_code)
         
         # Store project information in Supabase
         project_data = {
-            "name": project_name,
-            "files": json.dumps(project_files),
-            "processed_json": json.dumps(project_json)
+            "project_name": project_name,
+            "source_code": source_code,
+            "project_tags": project_tags
         }
         
-        result = supabase.table("projects").insert(project_data).execute()
+        try:
+            result = supabase.table("projects").insert(project_data).execute()
+            supabase.storage.empty_bucket(bucket_name)
+            return result
         
-        return {
-            "message": "Project uploaded successfully",
-            "project_id": result.data[0]["id"],
-            "file_count": len(project_files)
-        }
-        
+        except Exception as exception:
+            return exception
+    
     except Exception as e:
         raise HTTPException(
             status_code=500,
