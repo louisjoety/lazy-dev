@@ -8,6 +8,7 @@ load_dotenv()
 
 def code_to_tag_generator(project: str):
     # Calls the Gemini API to process the project code into a python list containing tags  
+  
     response = ""
 
     client = genai.Client(
