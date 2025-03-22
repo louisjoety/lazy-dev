@@ -1,12 +1,12 @@
 'use client';
 
 import React, { useState } from 'react';
-import Header from '../ui/Headers'; // Import the Header component
+import Header from '../components/ui/Headers'; // Import the Header component
+import supabase from '../supabase';
 
 const DragAndDrop = () => {
   const [files, setFiles] = useState<File[]>([]);
   const [dragging, setDragging] = useState(false);
-  const [submittedFiles, setSubmittedFiles] = useState<File[]>([]); // Store submitted files
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -29,9 +29,20 @@ const DragAndDrop = () => {
     setFiles((prevFiles) => [...prevFiles, ...selectedFiles]);
   };
 
-  const handleSubmit = () => {
-    setSubmittedFiles(files); // Submit the files
-    setFiles([]); // Optionally, clear the current files after submission
+  const handleSubmit = async () => {
+    const bucketName = 'project-files';
+
+    const uploadPromises = files.map(async (file) => {
+      const { error } = await supabase.storage
+        .from(bucketName)
+        .upload(file.name, file, { upsert: true });
+      if (error) {
+        throw new Error(`Failed to upload ${file.name}: ${error.message}`);
+      }
+    });
+
+    await Promise.all(uploadPromises);
+    setFiles([]);
   };
 
   return (

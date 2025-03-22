@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import Header from '../ui/Headers'; // Import the Header component
+import Header from '../components/ui/Headers'; // Import the Header component
 
 const Chatbot = () => {
   const [messages, setMessages] = useState<{ user: string; bot: string }[]>([]);
