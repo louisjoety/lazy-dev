@@ -1,13 +1,13 @@
 'use client'
 
 import React from 'react';
-import Header from '../ui/Headers'; // Import Header component
+import Header from '../components/ui/Headers'; // Import Header component
 
 interface DashboardProps {
-  files: File[];
+  files?: File[];
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ files }) => {
+const Dashboard: React.FC<DashboardProps> = ({ files = [] }) => {
   return (
     <div className="flex flex-col min-h-screen bg-white">
       {/* Include the Header component */}
@@ -19,7 +19,7 @@ const Dashboard: React.FC<DashboardProps> = ({ files }) => {
         <div className="w-full max-w-4xl p-5">
           <h1 className="text-xl font-semibold mb-4">Uploaded Files Dashboard</h1>
           <div className="border p-4 rounded-lg">
-            {files.length > 0 ? (
+            {files && files.length > 0 ? (
               <ul>
                 {files.map((file, index) => (
                   <li key={index} className="py-2">

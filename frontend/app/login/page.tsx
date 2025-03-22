@@ -1,14 +1,19 @@
 'use client';
 import { useState, FormEvent } from "react";
-import Header from '../ui/Headers'; // Import the Header component
+import { useRouter } from 'next/navigation';
+import Header from '../components/ui/Headers'; // Import the Header component
 
 const LoginForm = () => {
   const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
+  const router = useRouter();
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     console.log("Email:", email, "Password:", password);
+
+    // Redirect to dashboard after successful login
+    router.push('/dashboard');
   };
 
   return (
