@@ -1,8 +1,9 @@
-import base64
+import ast
 from dotenv import load_dotenv
 import os
 from google import genai
 from google.genai import types
+import json
 
 load_dotenv()
 
@@ -123,7 +124,7 @@ def ai_code_picker(source_code, user_prompt):
 
 INSTRUCTIONS: You will be given a .txt file containing all the source code of the project. The code for each file is encompassed within HTML style tags containing filename. For example, the code of index.html is enclosed within <index.html> and </index.html>. You will be given the user prompt and you need to select the lines of code that is relevant to what the user is asking. It does not have to contain exactly the same thing but it could be its applications too.
 
-RESPONSE FORMAT: return in json format like this {filename: relevant code snippets}. Ensure there is only one \"filename:\" for the snippets from the same file.
+RESPONSE FORMAT: return in json format like this {filename: relevant code snippets}. Ensure there is only one \"filename:\" for the snippets from the same file. Escape every single and double quotation mark
 
 example input:<template.html>
 <!DOCTYPE html>
@@ -369,5 +370,5 @@ with open('highlights.csv', encoding='utf-8') as csvFileObj:
         config=generate_content_config,
     ):
         response1 = response1 + chunk.text
-
-    return eval(response1[8:-4])
+        print(response1)
+    return json.loads(response1[8:-4])

@@ -33,7 +33,8 @@ class ChatbotRequest(BaseModel):
 @app.get("/get_all_projects")
 def get_all_projects():
     # Get all projects from supabase
-    return {"projects": []}
+    response = supabase.table("projects").select("*").execute()
+    print(response)
 
 @app.post("/upload_project")
 async def upload_project(request: ProjectUploadRequest):
@@ -117,13 +118,14 @@ async def process_query(request: ChatbotRequest):
         return e
     
     selected_project_ids = input_tag_matcher(query, projects_with_tags)
-    code_snippets = {}
+    code_snippets = []
 
     for project in selected_project_ids:
         response = supabase.table("projects").select("project_name, source_code").eq("id", project).execute()
         response = response.data[0]
-        print(response)
         code_snippet = ai_code_picker(response['source_code'], query)
-        code_snippets[response['project_name']] = code_snippet
+        # code_snippets[response['project_name']] = code_snippet
+
+        code_snippets.append({"project_name": response['project_name'], "matched_files": list(code_snippet.keys()), "snippets": code_snippet})
 
     return {"code_snippets": code_snippets}
