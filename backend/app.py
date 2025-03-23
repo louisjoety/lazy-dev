@@ -48,31 +48,7 @@ async def upload_project(request: ProjectUploadRequest):
         source_code = ''
         # Download and process each file
         async with aiohttp.ClientSession() as session:
-            for file in files:
-                '''
-                # Get the file URL
-                try:
-                    # file_url = supabase.storage.from_(bucket_name).get_public_url(file['name'])
-                    file_url = f'https://cfptchtfrdemsuheznmr.supabase.co/storage/v1/object/public/project-files//{file["name"]}'
-                except Exception as e:
-                    print(e)
-                '''
-                
-                try:
-                    # Download file content directly from Supabase
-                    response = supabase.storage.from_(bucket_name).download(file['name'])
-                    
-                    # For text files, decode the bytes to string
-                    try:
-                        content = response.decode('utf-8')
-                        source_code += f'<{file["name"]}>\n{content}\n</{file["name"]}>\n'
-                        print(f"Successfully processed {file['name']}")
-                    except UnicodeDecodeError:
-                        print(f"Skipping binary file: {file['name']}")
-                        continue
-                        
-                except Exception as e:
-                    print(f"Failed to download file: {file['name']}, error: {str(e)}")
+            source_code = get_client(bucket_name, files)
         
         # Create project JSON using the helper function
         project_tags = code_to_tag_generator(source_code)
@@ -99,6 +75,34 @@ async def upload_project(request: ProjectUploadRequest):
             status_code=500,
             detail=f"Error processing project upload: {str(e)}"
         )
+
+def get_client(bucket_name, files):
+    for file in files:
+        '''
+                # Get the file URL
+                try:
+                    # file_url = supabase.storage.from_(bucket_name).get_public_url(file['name'])
+                    file_url = f'https://cfptchtfrdemsuheznmr.supabase.co/storage/v1/object/public/project-files//{file["name"]}'
+                except Exception as e:
+                    print(e)
+                '''
+                
+        try:
+                    # Download file content directly from Supabase
+            response = supabase.storage.from_(bucket_name).download(file['name'])
+                    
+                    # For text files, decode the bytes to string
+            try:
+                content = response.decode('utf-8')
+                source_code += f'<{file["name"]}>\n{content}\n</{file["name"]}>\n'
+                print(f"Successfully processed {file['name']}")
+            except UnicodeDecodeError:
+                print(f"Skipping binary file: {file['name']}")
+                continue
+                        
+        except Exception as e:
+            print(f"Failed to download file: {file['name']}, error: {str(e)}")
+    return source_code
 
 @app.post("/query")
 async def process_query(query: str):
