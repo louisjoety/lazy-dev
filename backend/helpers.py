@@ -65,7 +65,7 @@ def input_tag_matcher(user_prompt: str, id_to_tags):
         types.Content(
             role="user",
             parts=[
-                types.Part.from_text(text="User prompt: "+user_prompt+"\n"+"tags: "+id_to_tags),
+                types.Part.from_text(text=f"User prompt: {user_prompt}\ntags: {id_to_tags}"),
             ],
         ),
     ]
