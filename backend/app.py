@@ -2,7 +2,7 @@ from fastapi import FastAPI, Path, Depends, HTTPException, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from dotenv import load_dotenv
-from helpers import code_to_tag_generator
+from helpers import code_to_tag_generator, input_tag_matcher, ai_code_picker
 from config import supabase
 import json
 from typing import Dict
@@ -26,6 +26,9 @@ app.add_middleware(
 # Create a model for the request body
 class ProjectUploadRequest(BaseModel):
     project_name: str
+
+class ChatbotRequest(BaseModel):
+    query: str
 
 @app.get("/get_all_projects")
 def get_all_projects():
@@ -101,10 +104,26 @@ async def upload_project(request: ProjectUploadRequest):
         )
 
 @app.post("/query")
-async def process_query(query: str):
-    # Pass the query through the LLM to get search fields
-    extract_search_fields(query)
-    # Retrieve projects from project information database based on search fields
-    # Search for code within the project code database corresponding to the projects retrieved
-    # Return code snippets from the project code database along with information on where the snippet was retrived from
-    return {"project": project}
+async def process_query(request: ChatbotRequest):
+    query = request.query
+    projects_with_tags = {}
+
+    try:
+        response = supabase.table("projects").select("id, tags").execute()
+        for project in response.data:
+            projects_with_tags[project['id']] = project['tags']
+    except Exception as e:
+        print(e)
+        return e
+    
+    selected_project_ids = input_tag_matcher(query, projects_with_tags)
+    code_snippets = {}
+
+    for project in selected_project_ids:
+        response = supabase.table("projects").select("project_name, source_code").eq("id", project).execute()
+        response = response.data[0]
+        print(response)
+        code_snippet = ai_code_picker(response['source_code'], query)
+        code_snippets[response['project_name']] = code_snippet
+
+    return {"code_snippets": code_snippets}
