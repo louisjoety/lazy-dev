@@ -10,21 +10,8 @@ load_dotenv()
 def code_to_tag_generator(project: str):
     # Calls the Gemini API to process the project code into a python list containing tags  
   
-    response = ""
+    response, client, model, contents = first_general_config(project)
 
-    client = genai.Client(
-        api_key=os.environ.get("GEMINI_API_KEY"),
-    )
-
-    model = "gemini-2.0-flash"
-    contents = [
-        types.Content(
-            role="user",
-            parts=[
-                types.Part.from_text(text=project),
-            ],
-        ),
-    ]
     generate_content_config = types.GenerateContentConfig(
         temperature=1,
         top_p=0.95,
@@ -52,10 +39,8 @@ RESPONSE FORMAT: Respond in python list containing tags"""),
     # converting string output into a list type
     return eval(response[10:-4])
 
-def input_tag_matcher(user_prompt: str, id_to_tags):
-    # Pass the query through Gemini to get search fields
-    response=""
-
+def first_general_config(project):
+    response = ""
 
     client = genai.Client(
         api_key=os.environ.get("GEMINI_API_KEY"),
@@ -70,6 +55,13 @@ def input_tag_matcher(user_prompt: str, id_to_tags):
             ],
         ),
     ]
+    
+    return response,client,model,contents
+
+def input_tag_matcher(user_prompt: str, id_to_tags):
+    # Pass the query through Gemini to get search fields
+    response, client, model, contents = second_general_config(user_prompt, id_to_tags)
+    
     generate_content_config = types.GenerateContentConfig(
         temperature=1,
         top_p=0.95,
@@ -94,25 +86,9 @@ RESPONSE FORMAT: Python list containing project ids."""),
 
     return eval(response)
 
-
-
 def ai_code_picker(source_code, user_prompt):
-    response1 = ""
-        
-    client = genai.Client(
-        api_key=os.environ.get("GEMINI_API_KEY"),
-    )
+    response1, client, model, contents = third_general_config(source_code, user_prompt)
 
-    model = "gemini-2.0-flash"
-    contents = [
-               
-        types.Content(
-            role="user",
-            parts=[
-                types.Part.from_text(text=f"user_prompt: {user_prompt}\nsource code: {source_code}"),
-            ],
-        ),
-    ]
     generate_content_config = types.GenerateContentConfig(
         temperature=1,
         top_p=0.95,
@@ -370,5 +346,5 @@ with open('highlights.csv', encoding='utf-8') as csvFileObj:
         config=generate_content_config,
     ):
         response1 = response1 + chunk.text
-        print(response1)
+        
     return json.loads(response1[8:-4])
