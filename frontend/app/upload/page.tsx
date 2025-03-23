@@ -1,14 +1,45 @@
 'use client';
 
 import React, { useState } from 'react';
-import Header from '../components/ui/Headers'; // Import the Header component
+import Header from '../components/ui/Headers';
 import supabase from '../supabase';
+
+// Define allowed file extensions
+const ALLOWED_EXTENSIONS = ['.py', '.js', '.ts', '.jsx', '.tsx', '.md', '.ipynb'];
 
 const DragAndDrop = () => {
   const [files, setFiles] = useState<File[]>([]);
   const [dragging, setDragging] = useState(false);
   const [projectName, setProjectName] = useState<string>('');
   const [isUploading, setIsUploading] = useState(false);
+  const [error, setError] = useState<string>('');
+
+  // Helper function to check if file type is allowed
+  const isFileAllowed = (file: File): boolean => {
+    const extension = '.' + file.name.split('.').pop()?.toLowerCase();
+    return ALLOWED_EXTENSIONS.includes(extension);
+  };
+
+  // Helper function to filter files
+  const filterFiles = (newFiles: File[]): File[] => {
+    const validFiles: File[] = [];
+    const invalidFiles: string[] = [];
+
+    newFiles.forEach(file => {
+      if (isFileAllowed(file)) {
+        validFiles.push(file);
+      } else {
+        invalidFiles.push(file.name);
+      }
+    });
+
+    if (invalidFiles.length > 0) {
+      setError(`Invalid file type(s): ${invalidFiles.join(', ')}. Allowed types: ${ALLOWED_EXTENSIONS.join(', ')}`);
+      setTimeout(() => setError(''), 5000); // Clear error after 5 seconds
+    }
+
+    return validFiles;
+  };
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -23,26 +54,30 @@ const DragAndDrop = () => {
     e.preventDefault();
     setDragging(false);
     const droppedFiles = Array.from(e.dataTransfer.files);
-    setFiles((prevFiles) => [...prevFiles, ...droppedFiles]);
+    const validFiles = filterFiles(droppedFiles);
+    setFiles((prevFiles) => [...prevFiles, ...validFiles]);
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = Array.from(e.target.files || []);
-    setFiles((prevFiles) => [...prevFiles, ...selectedFiles]);
+    const validFiles = filterFiles(selectedFiles);
+    setFiles((prevFiles) => [...prevFiles, ...validFiles]);
   };
 
   const handleSubmit = async () => {
     if (!projectName.trim()) {
-      alert('Please enter a project name');
+      setError('Please enter a project name');
       return;
     }
 
     if (files.length === 0) {
-      alert('Please select files to upload');
+      setError('Please select files to upload');
       return;
     }
 
     setIsUploading(true);
+    setError('');
+    
     try {
       // 1. Upload files to Supabase storage
       const bucketName = 'project-files';
@@ -83,7 +118,7 @@ const DragAndDrop = () => {
 
     } catch (error) {
       console.error('Upload failed:', error);
-      alert('Failed to upload project. Please try again.');
+      setError('Failed to upload project. Please try again.');
     } finally {
       setIsUploading(false);
     }
@@ -91,14 +126,16 @@ const DragAndDrop = () => {
 
   return (
     <div className="flex flex-col min-h-screen bg-white">
-      {/* Include Header Component */}
-      <Header
-        username="John Doe"
-        className="fixed top-0 left-0 right-0 z-50 bg-white shadow-md" // Fixed header with high z-index
-      />
+      <Header username="John Doe" />
 
-      <div className="flex justify-center items-center flex-grow mt-20"> {/* Add margin-top to avoid overlap with fixed header */}
+      <div className="flex justify-center items-center flex-grow mt-20">
         <div className="w-full max-w-2xl p-8">
+          {error && (
+            <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+              {error}
+            </div>
+          )}
+          
           <div className="mb-4">
             <label htmlFor="projectName" className="block text-sm font-medium text-gray-700">
               Project Name
@@ -115,7 +152,6 @@ const DragAndDrop = () => {
 
           <div
             className={`flex justify-center items-center border-2 p-5 border-dashed rounded-lg ${dragging ? 'border-blue-500' : 'border-gray-300'}`}
-            style={{ width: '60%' }} // Adjust the width as needed
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
@@ -127,20 +163,22 @@ const DragAndDrop = () => {
                 onChange={handleFileSelect}
                 className="hidden"
                 id="file-upload"
-                webkitdirectory="true" // This allows folder uploads
-                mozdirectory="true" // This helps with Firefox compatibility
+                accept={ALLOWED_EXTENSIONS.join(',')}
               />
               <label
                 htmlFor="file-upload"
-                className={`cursor-pointer ${dragging ? 'text-blue-500' : 'text-gray-700'}`} 
+                className={`cursor-pointer ${dragging ? 'text-blue-500' : 'text-gray-700'}`}
               >
                 {dragging ? 'Release to drop files' : 'Drag & drop or upload '}
-                <span className="text-blue-500 hover:underline">here</span>, or click to select files/folders
+                <span className="text-blue-500 hover:underline">here</span>
               </label>
+              <div className="mt-2 text-sm text-gray-500">
+                Allowed file types: {ALLOWED_EXTENSIONS.join(', ')}
+              </div>
               <div className="mt-4 text-gray-700">
                 <h3>Files Ready to Upload:</h3>
                 {files.length > 0 ? (
-                  <ul>
+                  <ul className="mt-2">
                     {files.map((file, index) => (
                       <li key={index} className="text-gray-700">{file.name}</li>
                     ))}
@@ -169,4 +207,4 @@ const DragAndDrop = () => {
   );
 };
 
-export default DragAndDrop;
+export default DragAndDrop; 
