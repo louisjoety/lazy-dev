@@ -32,9 +32,20 @@ class ChatbotRequest(BaseModel):
 
 @app.get("/get_all_projects")
 def get_all_projects():
-    # Get all projects from supabase
-    response = supabase.table("projects").select("*").execute()
-    print(response)
+    """
+    Get all projects from Supabase with their names and tags.
+    Returns a list of projects with their names and associated tags.
+    """
+    try:
+        response = supabase.table("projects").select("project_name, tags").execute()
+        if response.data:
+            return {"projects": response.data}
+        return {"projects": []}
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to fetch projects: {str(e)}"
+        )
 
 @app.post("/upload_project")
 async def upload_project(request: ProjectUploadRequest):

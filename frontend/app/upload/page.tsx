@@ -5,7 +5,7 @@ import Header from '../components/ui/Headers';
 import supabase from '../supabase';
 
 // Define allowed file extensions
-const ALLOWED_EXTENSIONS = ['.py', '.js', '.ts', '.jsx', '.tsx', '.md', '.ipynb'];
+const ALLOWED_EXTENSIONS = ['.py', '.js', '.ts', '.jsx', '.tsx', '.md', '.ipynb', '.html', '.css'];
 
 const DragAndDrop = () => {
   const [files, setFiles] = useState<File[]>([]);
@@ -145,7 +145,7 @@ const DragAndDrop = () => {
               id="projectName"
               value={projectName}
               onChange={(e) => setProjectName(e.target.value)}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-gray-900"
               placeholder="Enter project name"
             />
           </div>
@@ -161,7 +161,7 @@ const DragAndDrop = () => {
                 type="file"
                 multiple
                 onChange={handleFileSelect}
-                className="hidden"
+                className="hidden text-gray-900"
                 id="file-upload"
                 accept={ALLOWED_EXTENSIONS.join(',')}
               />
